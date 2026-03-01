@@ -4,29 +4,31 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
-	"golang/internal/handler"
-	"golang/internal/middleware"
-	"golang/internal/repository"
-	"golang/internal/repository/_postgres"
-	"golang/internal/usecase"
-	"golang/pkg/modules"
+	"practice3go/internal/handler"
+	"practice3go/internal/middleware"
+	"practice3go/internal/repository"
+	"practice3go/internal/repository/_postgres"
+	"practice3go/internal/usecase"
+	"practice3go/pkg/modules"
 )
 
 func main() {
 	cfg := &modules.PostgreConfig{
-		Host:        "localhost",
-		Port:        "5432",
-		Username:    "postgres",
-		Password:    "Esti2005",
-		DBName:      "mydb",
-		SSLMode:     "disable",
+		Host:        getenv("DB_HOST", "localhost"),
+		Port:        getenv("DB_PORT", "5432"),
+		Username:    getenv("DB_USER", "postgres"),
+		Password:    getenv("DB_PASSWORD", "postgres"),
+		DBName:      getenv("DB_NAME", "mydb"),
+		SSLMode:     getenv("DB_SSLMODE", "disable"),
 		ExecTimeout: 5 * time.Second,
 	}
 
 	pg := _postgres.NewPGXDialect(context.Background(), cfg)
 	repos := repository.NewRepositories(pg)
+
 	uc := usecase.NewUserUsecase(repos.UserRepository)
 	h := handler.NewUserHandler(uc)
 
@@ -35,15 +37,24 @@ func main() {
 	mux.HandleFunc("/users", h.Users)
 	mux.HandleFunc("/users/", h.UserByID)
 
-	apiKey := "Estiyar"
+	apiKey := getenv("API_KEY", "my-secret-key")
+	final := middleware.Logging(middleware.APIKey(apiKey)(mux))
 
-	finalHandler := middleware.Logging(middleware.APIKey(apiKey)(mux))
+	port := getenv("APP_PORT", "8080")
 
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: finalHandler,
+		Addr:    ":" + port,
+		Handler: final,
 	}
 
-	log.Println("listening on :8080")
+	log.Println("listening on :" + port)
 	log.Fatal(server.ListenAndServe())
+}
+
+func getenv(key, def string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	return v
 }

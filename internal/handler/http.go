@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"golang/internal/usecase"
-	"golang/pkg/modules"
+	"practice3go/internal/usecase"
+	"practice3go/pkg/modules"
 )
 
 type UserHandler struct {

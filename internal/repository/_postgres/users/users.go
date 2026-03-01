@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"time"
 
-	"golang/internal/repository/_postgres"
-	"golang/pkg/modules"
+	"practice3go/internal/repository/_postgres"
+	"practice3go/pkg/modules"
 )
 
 type Repository struct {

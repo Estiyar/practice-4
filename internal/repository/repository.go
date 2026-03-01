@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"golang/internal/repository/_postgres"
-	"golang/internal/repository/_postgres/users"
-	"golang/pkg/modules"
+	"practice3go/internal/repository/_postgres"
+	"practice3go/internal/repository/_postgres/users"
+	"practice3go/pkg/modules"
 )
 
 type UserRepository interface {
@@ -13,7 +13,6 @@ type UserRepository interface {
 	UpdateUser(id int, u modules.User) error
 	DeleteUserByID(id int) (int64, error)
 }
-
 
 type Repositories struct {
 	UserRepository

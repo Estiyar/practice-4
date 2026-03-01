@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"golang/internal/repository"
-	"golang/internal/repository/_postgres"
-	"golang/pkg/modules"
+	"practice3go/internal/repository"
+	"practice3go/internal/repository/_postgres"
+	"practice3go/pkg/modules"
 )
 
 func Run() {

@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"golang/internal/repository"
-	"golang/pkg/modules"
+	"practice3go/internal/repository"
+	"practice3go/pkg/modules"
 )
 
 type UserUsecase struct {
