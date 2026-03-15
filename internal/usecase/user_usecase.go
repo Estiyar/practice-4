@@ -32,3 +32,11 @@ func (u *UserUsecase) UpdateUser(id int, user modules.User) error {
 func (u *UserUsecase) DeleteUser(id int) (int64, error) {
 	return u.repo.DeleteUserByID(id)
 }
+
+func (u *UserUsecase) GetPaginatedUsers(page int, pageSize int, filters map[string]string, orderBy string) (modules.PaginatedResponse, error) {
+	return u.repo.GetPaginatedUsers(page, pageSize, filters, orderBy)
+}
+
+func (u *UserUsecase) GetCommonFriends(userID int, otherUserID int) ([]modules.User, error) {
+	return u.repo.GetCommonFriends(userID, otherUserID)
+}

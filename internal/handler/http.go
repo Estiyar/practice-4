@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"practice3go/internal/usecase"
 	"practice3go/pkg/modules"
@@ -37,18 +38,32 @@ func (h *UserHandler) Users(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		users, err := h.uc.GetUsers()
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		pageSize, _ := strconv.Atoi(r.URL.Query().Get("pageSize"))
+		orderBy := r.URL.Query().Get("order_by")
+
+		filters := map[string]string{
+			"id":         r.URL.Query().Get("id"),
+			"name":       r.URL.Query().Get("name"),
+			"email":      r.URL.Query().Get("email"),
+			"gender":     r.URL.Query().Get("gender"),
+			"birth_date": r.URL.Query().Get("birth_date"),
+		}
+
+		resp, err := h.uc.GetPaginatedUsers(page, pageSize, filters, orderBy)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		writeJSON(w, http.StatusOK, users)
+		writeJSON(w, http.StatusOK, resp)
 
 	case http.MethodPost:
 		var req struct {
-			Name  string `json:"name"`
-			Email string `json:"email"`
-			Age   int    `json:"age"`
+			Name      string `json:"name"`
+			Email     string `json:"email"`
+			Age       int    `json:"age"`
+			Gender    string `json:"gender"`
+			BirthDate string `json:"birth_date"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -56,18 +71,21 @@ func (h *UserHandler) Users(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if strings.TrimSpace(req.Name) == "" {
-			writeError(w, http.StatusBadRequest, "name is required")
+		birthDate, err := time.Parse("2006-01-02", req.BirthDate)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "birth_date must be YYYY-MM-DD")
 			return
 		}
 
 		id, err := h.uc.CreateUser(modules.User{
-			Name:  req.Name,
-			Email: req.Email,
-			Age:   req.Age,
+		Name: req.Name,
+		Email: &req.Email,
+		Age: &req.Age,
+		Gender: &req.Gender,
+		BirthDate: &birthDate,
 		})
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "cannot create user")
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -104,11 +122,13 @@ func (h *UserHandler) UserByID(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, http.StatusOK, user)
 
-	case http.MethodPut, http.MethodPatch:
+	case http.MethodPut:
 		var req struct {
-			Name  string `json:"name"`
-			Email string `json:"email"`
-			Age   int    `json:"age"`
+			Name      string `json:"name"`
+			Email     string `json:"email"`
+			Age       int    `json:"age"`
+			Gender    string `json:"gender"`
+			BirthDate string `json:"birth_date"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -116,15 +136,18 @@ func (h *UserHandler) UserByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if strings.TrimSpace(req.Name) == "" {
-			writeError(w, http.StatusBadRequest, "name is required")
+		birthDate, err := time.Parse("2006-01-02", req.BirthDate)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "birth_date must be YYYY-MM-DD")
 			return
 		}
 
 		err = h.uc.UpdateUser(id, modules.User{
-			Name:  req.Name,
-			Email: req.Email,
-			Age:   req.Age,
+		Name:      req.Name,
+		Email:     &req.Email,
+		Age:       &req.Age,
+		Gender:    &req.Gender,
+		BirthDate: &birthDate,
 		})
 		if err != nil {
 			if errors.Is(err, modules.ErrUserNotFound) {
@@ -155,10 +178,29 @@ func (h *UserHandler) UserByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Health(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) CommonFriends(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
+
+	userID, _ := strconv.Atoi(r.URL.Query().Get("user_id"))
+	otherUserID, _ := strconv.Atoi(r.URL.Query().Get("other_user_id"))
+
+	if userID <= 0 || otherUserID <= 0 {
+		writeError(w, http.StatusBadRequest, "user_id and other_user_id are required")
+		return
+	}
+
+	users, err := h.uc.GetCommonFriends(userID, otherUserID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, users)
+}
+
+func Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

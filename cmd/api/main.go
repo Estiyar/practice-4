@@ -28,7 +28,6 @@ func main() {
 
 	pg := _postgres.NewPGXDialect(context.Background(), cfg)
 	repos := repository.NewRepositories(pg)
-
 	uc := usecase.NewUserUsecase(repos.UserRepository)
 	h := handler.NewUserHandler(uc)
 
@@ -36,15 +35,15 @@ func main() {
 	mux.HandleFunc("/health", handler.Health)
 	mux.HandleFunc("/users", h.Users)
 	mux.HandleFunc("/users/", h.UserByID)
+	mux.HandleFunc("/common-friends", h.CommonFriends)
 
 	apiKey := getenv("API_KEY", "my-secret-key")
-	final := middleware.Logging(middleware.APIKey(apiKey)(mux))
+	finalHandler := middleware.Logging(middleware.APIKey(apiKey)(mux))
 
 	port := getenv("APP_PORT", "8080")
-
 	server := &http.Server{
 		Addr:    ":" + port,
-		Handler: final,
+		Handler: finalHandler,
 	}
 
 	log.Println("listening on :" + port)
